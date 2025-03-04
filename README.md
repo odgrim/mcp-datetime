@@ -12,9 +12,11 @@ A TypeScript implementation of a simple MCP (Model Context Protocol) server that
 
 ## Installation
 
+### Option 1: Clone and Install
+
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/mcp-datetime.git
+git clone https://github.com/odgrim/mcp-datetime.git
 cd mcp-datetime
 
 # Install dependencies
@@ -24,13 +26,30 @@ npm install
 npm run build
 ```
 
+### Option 2: Run Directly with npx
+
+You can run this package directly from GitHub without installing it locally:
+
+```bash
+# Run using npx with GitHub repository
+npx github:odgrim/mcp-datetime
+
+# Or with the shorthand syntax
+npx odgrim/mcp-datetime
+```
+
+This will automatically download, install, and run the package in one command.
+
 ## Usage
 
 ### Running the server with stdio transport
 
 ```bash
-# Start the server with stdio transport
+# If installed locally
 npm start
+
+# Or with npx
+npx odgrim/mcp-datetime
 ```
 
 This will start the MCP DateTime server using stdio transport, which can be connected to by MCP clients.
@@ -67,11 +86,8 @@ The easiest way to test and debug your MCP DateTime server is to use the [MCP In
 ### Testing stdio transport
 
 ```bash
-# Test the server using MCP Inspector
+# Test the server using MCP Inspector with local installation
 npx @modelcontextprotocol/inspector node dist/index.js
-
-# Or with the development version
-npx @modelcontextprotocol/inspector ts-node --esm src/index.ts
 ```
 
 ### Testing HTTP/SSE transport
@@ -144,4 +160,4 @@ Using an MCP client, you can:
 
 ## License
 
-MIT 
+Mozilla Public License 2.0 (MPL-2.0) 
