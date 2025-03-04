@@ -100,6 +100,25 @@ function getCurrentTimeInTimezone(timezone: string): string {
   }
 }
 
+// Get the current system timezone
+function getCurrentTimezone(): string {
+  try {
+    // Get the timezone from the system
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    
+    // Verify it's a valid timezone
+    if (isValidTimezone(timezone)) {
+      return timezone;
+    } else {
+      console.warn(`System timezone ${timezone} is not valid, falling back to UTC`);
+      return "UTC";
+    }
+  } catch (error) {
+    console.error("Error getting current timezone:", error);
+    return "UTC"; // Default to UTC if there's an error
+  }
+}
+
 // Create an MCP server
 export const server = new McpServer({
   name: "mcp-datetime",
@@ -116,6 +135,21 @@ server.tool(
       text: `The current time is ${getCurrentTimeInTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone)}`
     }]
   })
+);
+
+// Add a tool to get the current system timezone
+server.tool(
+  "get-current-timezone",
+  "Get the current system timezone",
+  async () => {
+    const timezone = getCurrentTimezone();
+    return {
+      content: [{ 
+        type: "text", 
+        text: `The current system timezone is ${timezone}`
+      }]
+    };
+  }
 );
 
 // Add a tool to get the current time in a specific timezone
@@ -154,7 +188,7 @@ server.tool(
     return {
       content: [{ 
         type: "text", 
-        text: `Available timezones (${timezones.length}): ${timezones.join(',')}`
+        text: `Available timezones (${timezones.length}): ${timezones.join(', ')}`
       }]
     };
   }
