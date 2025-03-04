@@ -138,16 +138,6 @@ server.tool(
   }
 );
 
-// Encode timezone for URI (replace / with _)
-function encodeTimezone(timezone: string): string {
-  return encodeURIComponent(timezone);
-}
-
-// Decode timezone from URI (replace _ with /)
-function decodeTimezone(encodedTimezone: string): string {
-  return decodeURIComponent(encodedTimezone);
-}
-
 // Create a resource template for datetime URIs
 // The list method is defined to return a list of common timezones
 // to avoid overwhelming the client with all available timezones
@@ -155,7 +145,7 @@ const datetimeTemplate = new ResourceTemplate("datetime://{timezone}", {
   list: async () => {
     return {
       resources: COMMON_TIMEZONES.map(timezone => ({
-        uri: `datetime://${encodeTimezone(timezone)}`,
+        uri: `datetime://${encodeURIComponent(timezone)}`,
         name: `Current time in ${timezone}`,
         description: `Get the current time in the ${timezone} timezone`,
         mimeType: "text/plain"
@@ -171,7 +161,7 @@ server.resource(
   async (uri, variables) => {
     // Decode the timezone from the URI
     const encodedTimezone = variables.timezone as string;
-    const timezone = decodeTimezone(encodedTimezone);
+    const timezone = decodeURIComponent(encodedTimezone);
     
     if (!timezone || !isValidTimezone(timezone)) {
       throw new Error(`Invalid timezone: ${timezone}`);
@@ -180,7 +170,7 @@ server.resource(
     const formattedTime = getCurrentTimeInTimezone(timezone);
     return {
       contents: [{
-        uri: uri.href,
+        uri: decodeURIComponent(uri.href),
         text: `Current time in ${timezone}: ${formattedTime}`,
         mimeType: "text/plain"
       }]
@@ -197,7 +187,7 @@ server.resource(
     const allTimezones = getAvailableTimezones();
     
     // Create a simple list of timezones
-    const timezoneList = allTimezones.join(',');
+    const timezoneList = allTimezones.join(', ');
     
     return {
       contents: [{
