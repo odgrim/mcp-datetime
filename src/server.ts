@@ -46,35 +46,57 @@ function isValidTimezone(timezone: string): boolean {
   }
 }
 
-// Format the current date and time for a given timezone
+// Format the current date and time for a given timezone in ISO8601 format
 function getCurrentTimeInTimezone(timezone: string): string {
   try {
+    const date = new Date();
+    
+    // Create a formatter that includes the timezone
     const options: Intl.DateTimeFormatOptions = {
+      timeZone: timezone,
+      timeZoneName: 'short'
+    };
+    
+    // Get the timezone offset from the formatter
+    const formatter = new Intl.DateTimeFormat('en-US', options);
+    const formattedDate = formatter.format(date);
+    const timezonePart = formattedDate.split(' ').pop() || '';
+    
+    // Format the date in ISO8601 format with the timezone
+    // First get the date in the specified timezone
+    const tzFormatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: timezone,
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
       hour: '2-digit',
       minute: '2-digit',
       second: '2-digit',
-      timeZone: timezone,
-      hour12: false
-    };
+      hour12: false,
+      fractionalSecondDigits: 3
+    });
     
-    const formatter = new Intl.DateTimeFormat('en-US', options);
-    const parts = formatter.formatToParts(new Date());
+    const parts = tzFormatter.formatToParts(date);
+    const dateParts: Record<string, string> = {};
     
-    // Extract parts and format as YYYY-MM-DD HH:MM:SS
-    const year = parts.find(part => part.type === 'year')?.value || '';
-    const month = parts.find(part => part.type === 'month')?.value || '';
-    const day = parts.find(part => part.type === 'day')?.value || '';
-    const hour = parts.find(part => part.type === 'hour')?.value || '';
-    const minute = parts.find(part => part.type === 'minute')?.value || '';
-    const second = parts.find(part => part.type === 'second')?.value || '';
+    parts.forEach(part => {
+      if (part.type !== 'literal') {
+        dateParts[part.type] = part.value;
+      }
+    });
     
-    return `${year}-${month}-${day} ${hour}:${minute}:${second}`;
+    // Format as YYYY-MM-DDTHH:MM:SS.sss±HH:MM (ISO8601)
+    const isoDate = `${dateParts.year}-${dateParts.month}-${dateParts.day}T${dateParts.hour}:${dateParts.minute}:${dateParts.second}.${dateParts.fractionalSecond || '000'}`;
+    
+    // For proper ISO8601, we need to add the timezone offset
+    // We can use the Intl.DateTimeFormat to get the timezone offset
+    const tzOffset = new Date().toLocaleString('en-US', { timeZone: timezone, timeZoneName: 'longOffset' }).split(' ').pop() || '';
+    
+    // Format the final ISO8601 string
+    return `${isoDate}${tzOffset.replace('GMT', '')}`;
   } catch (error) {
     console.error(`Error formatting time for timezone ${timezone}:`, error);
-    return `Error: Invalid timezone ${timezone}`;
+    return 'Invalid timezone';
   }
 }
 
