@@ -1,175 +1,163 @@
-# MCP DateTime Server
+# MCP DateTime
 
-A TypeScript implementation of a simple MCP (Model Context Protocol) server that exposes datetime information to agentic systems and chat REPLs.
+A TypeScript implementation of a Model Context Protocol (MCP) server that provides datetime and timezone information to agentic systems and chat REPLs.
 
-## Features
+## Overview
 
-- Get the current time in the local timezone
-- Get the current time in a specific timezone
-- List all available timezones (400+ IANA timezones supported)
-- Access datetime resources through MCP URIs
-- Multiple transport options: stdio and HTTP with Server-Sent Events (SSE)
+MCP DateTime is a simple server that implements the [Model Context Protocol](https://github.com/model-context-protocol/mcp) to provide datetime and timezone information to AI agents and chat interfaces. It allows AI systems to:
+
+- Get the current time in the local system timezone
+- Get the current time in any valid timezone
+- List all available timezones
+- Access timezone information through URI resources
 
 ## Installation
 
-### Option 1: Clone and Install
+### From npm
 
 ```bash
-# Clone the repository
-git clone https://github.com/odgrim/mcp-datetime.git
+npm install -g mcp-datetime
+```
+
+### From source
+
+```bash
+git clone https://github.com/yourusername/mcp-datetime.git
 cd mcp-datetime
-
-# Install dependencies
 npm install
-
-# Build the project
 npm run build
 ```
 
-### Option 2: Run Directly with npx
-
-You can run this package directly from GitHub without installing it locally:
-
-```bash
-# Run using npx with GitHub repository
-npx github:odgrim/mcp-datetime
-
-# Or with the shorthand syntax
-npx odgrim/mcp-datetime
-```
-
-This will automatically download, install, and run the package in one command.
-
 ## Usage
 
-### Running the server with stdio transport
+### Command Line
+
+MCP DateTime can be run in two modes:
+
+#### 1. Standard I/O Mode (Default)
+
+This mode is ideal for integrating with AI systems that support the MCP protocol through standard input/output:
 
 ```bash
-# If installed locally
-npm start
-
-# Or with npx
-npx odgrim/mcp-datetime
+mcp-datetime
 ```
 
-This will start the MCP DateTime server using stdio transport, which can be connected to by MCP clients.
+#### 2. Server-Sent Events (SSE) Mode
 
-### Running the server with HTTP/SSE transport
+This mode starts an HTTP server that provides SSE transport for the MCP protocol:
 
 ```bash
-# Start the server with HTTP/SSE transport (default port 3000)
-npm run start:sse
-
-# Start with a custom port using command line argument
-npm run start:sse -- --port=8080
-
-# Start with a custom port using environment variable
-PORT=8080 npm run start:sse
+mcp-datetime --sse
 ```
 
-This will start an HTTP server that provides Server-Sent Events (SSE) for MCP communication. The server exposes the following endpoints:
-
-- `/sse` - SSE endpoint for establishing a connection
-- `/message` - Endpoint for sending messages to the server
-- `/info` - Basic server information
-
-You can connect to this server using an MCP client that supports the SSE transport.
-
-### Development
+You can also specify a custom port and URI prefix:
 
 ```bash
-# Run in development mode with stdio transport
-npm run dev
-
-# Run in development mode with HTTP/SSE transport
-npm run dev:http
+mcp-datetime --sse --port=8080 --prefix=/api/datetime
 ```
 
-## Testing with MCP Inspector
+### Environment Variables
 
-The easiest way to test and debug your MCP DateTime server is to use the [MCP Inspector](https://github.com/modelcontextprotocol/inspector), a visual testing tool for MCP servers.
-
-### Testing stdio transport
-
-```bash
-# Test the server using MCP Inspector with local installation
-npx @modelcontextprotocol/inspector node dist/index.js
-```
-
-### Testing HTTP/SSE transport
-
-For the HTTP/SSE transport, first start the server:
-
-```bash
-npm run start:sse
-```
-
-Then in a separate terminal, you can connect to it using an MCP client that supports SSE, or you can use tools like `curl` to test the SSE endpoint:
-
-```bash
-curl -N http://localhost:3000/sse
-```
-
-To send messages to the server, you can use a tool like `curl` to make POST requests to the `/message` endpoint with the appropriate connection ID:
-
-```bash
-curl -X POST http://localhost:3000/message -H "Content-Type: application/json" -d '{"message": "your message here"}'
-```
+- `PORT`: Sets the port for SSE mode (default: 3000)
+- `URI_PREFIX`: Sets the URI prefix for SSE mode (default: none)
 
 ## Available Tools
 
-- `get-current-time`: Get the current time in the configured local timezone
-- `get-time-in-timezone`: Get the current time in a specific timezone
-- `list-timezones`: List all available timezones (400+ IANA timezones)
+MCP DateTime provides the following tools:
 
-## Available Resources
+### `get-current-time`
 
-- `datetime://{timezone}/now`: Get the current time in the specified timezone
-  - Note: While all IANA timezones are supported, only common timezones are listed when browsing resources
+Returns the current time in the system's local timezone.
 
-## Example
+### `get-current-timezone`
 
-Using an MCP client, you can:
+Returns the current system timezone.
 
-1. List available tools:
-   ```
-   > list tools
-   - get-current-time: Get the current time in the configured local timezone
-   - get-time-in-timezone: Get the current time in a specific timezone
-   - list-timezones: List all available timezones
-   ```
+### `get-time-in-timezone`
 
-2. Call a tool:
-   ```
-   > call get-current-time
-   The current time is 2023-03-15 14:30:45
-   
-   > call get-time-in-timezone {"timezone": "America/New_York"}
-   The current time in America/New_York is 2023-03-15 10:30:45
-   
-   > call list-timezones
-   Available timezones (424):
-   Africa/Abidjan
-   Africa/Accra
-   Africa/Addis_Ababa
-   ...
-   ```
+Returns the current time in a specified timezone.
 
-3. List available resources:
-   ```
-   > list resources
-   - datetime://UTC/now: Current time in UTC
-   - datetime://America/New_York/now: Current time in America/New_York
-   - datetime://Europe/London/now: Current time in Europe/London
-   - ...
-   ```
+Parameters:
+- `timezone`: The timezone to get the current time for (e.g., "America/New_York")
 
-4. Read a resource:
-   ```
-   > read datetime://UTC/now
-   Current time in UTC: 2023-03-15 14:30:45
-   ```
+### `list-timezones`
+
+Returns a list of all available timezones.
+
+## Resource URIs
+
+MCP DateTime also provides access to timezone information through resource URIs:
+
+### `datetime://{timezone}`
+
+Returns the current time in the specified timezone.
+
+Example: `datetime://America/New_York`
+
+### `datetime://list`
+
+Returns a list of all available timezones.
+
+## Common Timezones
+
+The following common timezones are always available:
+
+- UTC
+- Europe/London
+- Europe/Paris
+- Europe/Berlin
+- America/New_York
+- America/Chicago
+- America/Denver
+- America/Los_Angeles
+- Asia/Tokyo
+- Asia/Shanghai
+- Asia/Kolkata
+- Australia/Sydney
+- Pacific/Auckland
+
+## SSE Endpoints
+
+When running in SSE mode, the following endpoints are available:
+
+- `/sse`: SSE connection endpoint
+- `/message`: Message endpoint for client-to-server communication
+- `/info`: Basic server information
+
+If a URI prefix is specified, it will be prepended to all endpoints.
+
+## Integration with AI Systems
+
+MCP DateTime can be integrated with AI systems that support the Model Context Protocol. This allows AI agents to access accurate timezone and datetime information.
+
+## Development
+
+### Prerequisites
+
+- Node.js 14.16 or higher
+- npm
+
+### Setup
+
+```bash
+git clone https://github.com/yourusername/mcp-datetime.git
+cd mcp-datetime
+npm install
+```
+
+### Build
+
+```bash
+npm run build
+```
+
+### Run in Development Mode
+
+```bash
+npm run dev        # Standard I/O mode
+npm run dev:sse    # SSE mode
+```
 
 ## License
 
-Mozilla Public License 2.0 (MPL-2.0) 
+This project is licensed under the Mozilla Public License 2.0 - see the [LICENSE](LICENSE) file for details. 

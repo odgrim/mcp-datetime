@@ -9,17 +9,24 @@ async function main() {
   
   // Check if the --sse flag is provided
   const useSSE = process.argv.includes("--sse");
+  
   // Check if a custom port is provided with --port=XXXX
   const portArg = process.argv.find(arg => arg.startsWith("--port="));
   // Use PORT environment variable or command line argument or default to 3000
   const defaultPort = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
   const port = portArg ? parseInt(portArg.split("=")[1], 10) : defaultPort;
+  
+  // Check if a URI prefix is provided with --prefix=XXXX
+  const prefixArg = process.argv.find(arg => arg.startsWith("--prefix="));
+  // Use URI_PREFIX environment variable or command line argument or default to empty string
+  const defaultPrefix = process.env.URI_PREFIX || "";
+  const uriPrefix = prefixArg ? prefixArg.split("=")[1] : defaultPrefix;
 
   try {
     if (useSSE) {
       // Start the SSE server
       console.error(`Starting MCP DateTime server with SSE transport on port ${port}...`);
-      const cleanup = startSSEServer(port);
+      const cleanup = startSSEServer(port, uriPrefix);
       
       // Handle graceful shutdown
       process.on("SIGINT", async () => {
