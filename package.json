@@ -48,10 +48,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/yourusername/mcp-datetime.git"
+    "url": "git+https://github.com/odgrim/mcp-datetime.git"
   },
   "bugs": {
-    "url": "https://github.com/yourusername/mcp-datetime/issues"
+    "url": "https://github.com/odgrim/mcp-datetime/issues"
   },
-  "homepage": "https://github.com/yourusername/mcp-datetime#readme"
+  "homepage": "https://github.com/odgrim/mcp-datetime#readme"
 }

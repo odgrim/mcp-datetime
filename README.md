@@ -22,7 +22,7 @@ npm install -g mcp-datetime
 ### From source
 
 ```bash
-git clone https://github.com/yourusername/mcp-datetime.git
+git clone https://github.com/odgrmi/mcp-datetime.git
 cd mcp-datetime
 npm install
 npm run build
@@ -140,7 +140,7 @@ MCP DateTime can be integrated with AI systems that support the Model Context Pr
 ### Setup
 
 ```bash
-git clone https://github.com/yourusername/mcp-datetime.git
+git clone https://github.com/odgrim/mcp-datetime.git
 cd mcp-datetime
 npm install
 ```
