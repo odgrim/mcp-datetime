@@ -16,16 +16,68 @@ describe('timezone-utils', () => {
   const originalSupportedValuesOf = Intl.supportedValuesOf;
   const originalDateTimeFormat = Intl.DateTimeFormat;
   const originalConsoleWarn = console.warn;
+  const originalConsoleError = console.error;
+  const originalToLocaleString = Date.prototype.toLocaleString;
   
   // Restore original methods after each test
   afterEach(() => {
     Intl.supportedValuesOf = originalSupportedValuesOf;
     Intl.DateTimeFormat = originalDateTimeFormat;
     console.warn = originalConsoleWarn;
+    console.error = originalConsoleError;
+    Date.prototype.toLocaleString = originalToLocaleString;
     
     // Restore any mocked functions
     jest.restoreAllMocks();
   });
+
+  // Helper function to create a mock formatter
+  const createMockFormatter = (options: {
+    formattedDate?: string;
+    timeZone?: string;
+    timeZoneValue?: string;
+    includeFractionalSecond?: boolean;
+  } = {}) => {
+    const {
+      formattedDate = '2023-01-01T12:00:00.000+00:00',
+      timeZone = 'UTC',
+      timeZoneValue = 'GMT+00:00',
+      includeFractionalSecond = true
+    } = options;
+    
+    const parts = [
+      { type: 'year', value: '2023' },
+      { type: 'literal', value: '-' },
+      { type: 'month', value: '01' },
+      { type: 'literal', value: '-' },
+      { type: 'day', value: '01' },
+      { type: 'literal', value: 'T' },
+      { type: 'hour', value: '12' },
+      { type: 'literal', value: ':' },
+      { type: 'minute', value: '00' },
+      { type: 'literal', value: ':' },
+      { type: 'second', value: '00' },
+      { type: 'literal', value: '.' }
+    ];
+    
+    if (includeFractionalSecond) {
+      parts.push({ type: 'fractionalSecond', value: '000' });
+    }
+    
+    parts.push({ type: 'timeZoneName', value: timeZoneValue });
+    
+    return {
+      format: () => formattedDate,
+      formatToParts: () => parts,
+      resolvedOptions: () => ({ timeZone })
+    };
+  };
+  
+  // Helper function to mock DateTimeFormat
+  const mockDateTimeFormat = (formatter: any) => {
+    // @ts-ignore - TypeScript doesn't like us mocking built-in objects
+    Intl.DateTimeFormat = jest.fn().mockImplementation(() => formatter);
+  };
   
   describe('getAvailableTimezones', () => {
     it('should return a sorted array of timezones', () => {
@@ -90,22 +142,9 @@ describe('timezone-utils', () => {
   });
 
   describe('getCurrentTimezone', () => {
-    let originalDateTimeFormat: typeof Intl.DateTimeFormat;
-    let originalConsoleWarn: typeof console.warn;
-    let originalConsoleError: typeof console.error;
-
     beforeEach(() => {
-      originalDateTimeFormat = Intl.DateTimeFormat;
-      originalConsoleWarn = console.warn;
-      originalConsoleError = console.error;
       console.warn = jest.fn();
       console.error = jest.fn();
-    });
-
-    afterEach(() => {
-      Intl.DateTimeFormat = originalDateTimeFormat;
-      console.warn = originalConsoleWarn;
-      console.error = originalConsoleError;
     });
 
     it('should return the current timezone', () => {
@@ -138,7 +177,6 @@ describe('timezone-utils', () => {
       );
     });
 
-    // Test the specific line that's not being covered
     it('should call handleInvalidTimezone for invalid system timezone', () => {
       // Create a function that simulates getCurrentTimezone with an invalid timezone
       const simulateGetCurrentTimezoneWithInvalidTimezone = () => {
@@ -164,33 +202,13 @@ describe('timezone-utils', () => {
   });
 
   describe('getCurrentTimeInTimezone', () => {
+    beforeEach(() => {
+      console.error = jest.fn();
+    });
+
     it('should format the current time in UTC', () => {
-      // Create a mock formatter object
-      const mockFormatter = {
-        format: () => '2023-01-01T12:00:00.000+00:00',
-        formatToParts: () => [
-          { type: 'year', value: '2023' },
-          { type: 'literal', value: '-' },
-          { type: 'month', value: '01' },
-          { type: 'literal', value: '-' },
-          { type: 'day', value: '01' },
-          { type: 'literal', value: 'T' },
-          { type: 'hour', value: '12' },
-          { type: 'literal', value: ':' },
-          { type: 'minute', value: '00' },
-          { type: 'literal', value: ':' },
-          { type: 'second', value: '00' },
-          { type: 'literal', value: '.' },
-          { type: 'fractionalSecond', value: '000' },
-          { type: 'timeZoneName', value: 'GMT+00:00' }
-        ],
-        resolvedOptions: () => ({ timeZone: 'UTC' })
-      };
-      
-      // Mock the DateTimeFormat constructor
-      Intl.DateTimeFormat = function() {
-        return mockFormatter;
-      } as any;
+      // Mock the DateTimeFormat constructor with our helper
+      mockDateTimeFormat(createMockFormatter());
       
       const time = getCurrentTimeInTimezone('UTC');
       
@@ -202,32 +220,12 @@ describe('timezone-utils', () => {
     });
 
     it('should format the current time in a specific timezone', () => {
-      // Create a mock formatter object
-      const mockFormatter = {
-        format: () => '2023-01-01T12:00:00.000+01:00',
-        formatToParts: () => [
-          { type: 'year', value: '2023' },
-          { type: 'literal', value: '-' },
-          { type: 'month', value: '01' },
-          { type: 'literal', value: '-' },
-          { type: 'day', value: '01' },
-          { type: 'literal', value: 'T' },
-          { type: 'hour', value: '12' },
-          { type: 'literal', value: ':' },
-          { type: 'minute', value: '00' },
-          { type: 'literal', value: ':' },
-          { type: 'second', value: '00' },
-          { type: 'literal', value: '.' },
-          { type: 'fractionalSecond', value: '000' },
-          { type: 'timeZoneName', value: 'GMT+01:00' }
-        ],
-        resolvedOptions: () => ({ timeZone: 'Europe/London' })
-      };
-      
-      // Mock the DateTimeFormat constructor
-      Intl.DateTimeFormat = function() {
-        return mockFormatter;
-      } as any;
+      // Mock the DateTimeFormat constructor with our helper
+      mockDateTimeFormat(createMockFormatter({
+        formattedDate: '2023-01-01T12:00:00.000+01:00',
+        timeZone: 'Europe/London',
+        timeZoneValue: 'GMT+01:00'
+      }));
       
       const time = getCurrentTimeInTimezone('Europe/London');
       
@@ -244,225 +242,142 @@ describe('timezone-utils', () => {
     });
 
     it('should handle edge cases in date formatting', () => {
-      // Create a spy on console.error to verify it's called
-      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      // Mock DateTimeFormat to throw an error
+      Intl.DateTimeFormat = jest.fn().mockImplementation(() => {
+        throw new Error('Mock error');
+      }) as any;
       
-      try {
-        // Mock DateTimeFormat to throw an error
-        const originalDateTimeFormat = Intl.DateTimeFormat;
-        
-        // @ts-ignore - TypeScript doesn't like us mocking built-in objects
-        Intl.DateTimeFormat = function() {
-          throw new Error('Mock error');
-        } as any;
-        
-        // This should trigger the catch block in getCurrentTimeInTimezone
-        const result = getCurrentTimeInTimezone('UTC');
-        
-        // Verify we got the error message
-        expect(result).toBe('Invalid timezone');
-        
-        // Verify console.error was called
-        expect(consoleErrorSpy).toHaveBeenCalled();
-        
-        // Restore original implementation
-        Intl.DateTimeFormat = originalDateTimeFormat;
-      } finally {
-        // Restore console.error
-        consoleErrorSpy.mockRestore();
-      }
+      // This should trigger the catch block in getCurrentTimeInTimezone
+      const result = getCurrentTimeInTimezone('UTC');
+      
+      // Verify we got the error message
+      expect(result).toBe('Invalid timezone');
+      
+      // Verify console.error was called
+      expect(console.error).toHaveBeenCalled();
     });
 
     it('should handle empty timezone parts in formatting', () => {
-      // Create a spy on console.error to verify it's not called
-      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      // First mock for the formatter that gets the timezone offset
+      const mockEmptyFormatter = {
+        format: jest.fn().mockReturnValue('2023-01-01') // No timezone part
+      };
       
-      try {
-        // Mock DateTimeFormat to return a formatter with empty parts
-        const originalDateTimeFormat = Intl.DateTimeFormat;
-        
-        // First mock for the formatter that gets the timezone offset
-        const mockEmptyFormatter = {
-          format: jest.fn().mockReturnValue('2023-01-01') // No timezone part
-        };
-        
-        // Second mock for the formatter that gets the date parts
-        const mockTzFormatter = {
-          formatToParts: jest.fn().mockReturnValue([
-            { type: 'year', value: '2023' },
-            { type: 'month', value: '01' },
-            { type: 'day', value: '01' },
-            { type: 'hour', value: '12' },
-            { type: 'minute', value: '00' },
-            { type: 'second', value: '00' }
-            // No fractionalSecond to test that branch
-          ])
-        };
-        
-        // Mock Date.toLocaleString to return a string without timezone
-        const originalToLocaleString = Date.prototype.toLocaleString;
-        Date.prototype.toLocaleString = jest.fn().mockReturnValue('January 1, 2023') as any;
-        
-        // @ts-ignore - TypeScript doesn't like us mocking built-in objects
-        Intl.DateTimeFormat = jest.fn()
-          .mockImplementationOnce(() => mockEmptyFormatter)
-          .mockImplementationOnce(() => mockTzFormatter);
-        
-        const result = getCurrentTimeInTimezone('UTC');
-        
-        // Verify the result contains the expected date format
-        expect(result).toContain('2023-01-01T12:00:00.000');
-        
-        // Restore original implementations
-        Intl.DateTimeFormat = originalDateTimeFormat;
-        Date.prototype.toLocaleString = originalToLocaleString;
-      } finally {
-        // Restore console.error
-        consoleErrorSpy.mockRestore();
-      }
+      // Second mock for the formatter that gets the date parts
+      const mockTzFormatter = {
+        formatToParts: jest.fn().mockReturnValue([
+          { type: 'year', value: '2023' },
+          { type: 'month', value: '01' },
+          { type: 'day', value: '01' },
+          { type: 'hour', value: '12' },
+          { type: 'minute', value: '00' },
+          { type: 'second', value: '00' }
+          // No fractionalSecond to test that case
+        ])
+      };
+      
+      // Mock Date.toLocaleString to return a string without timezone
+      Date.prototype.toLocaleString = jest.fn().mockReturnValue('January 1, 2023') as any;
+      
+      // Mock DateTimeFormat to return our formatters
+      Intl.DateTimeFormat = jest.fn()
+        .mockImplementationOnce(() => mockEmptyFormatter)
+        .mockImplementationOnce(() => mockTzFormatter) as any;
+      
+      const result = getCurrentTimeInTimezone('UTC');
+      
+      // Verify the result contains the expected date format
+      expect(result).toContain('2023-01-01T12:00:00.000');
     });
 
     it('should handle null values in split operations', () => {
-      // Create a spy on console.error to verify it's called
-      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      // Mock formatter with null format result
+      const mockNullFormatter = {
+        format: jest.fn().mockReturnValue(null)
+      };
       
-      try {
-        // Mock DateTimeFormat to return a formatter with null format result
-        const originalDateTimeFormat = Intl.DateTimeFormat;
-        
-        // First mock for the formatter that gets the timezone offset
-        const mockNullFormatter = {
-          format: jest.fn().mockReturnValue(null) // This will cause split to throw
-        };
-        
-        // @ts-ignore - TypeScript doesn't like us mocking built-in objects
-        Intl.DateTimeFormat = jest.fn().mockImplementation(() => mockNullFormatter);
-        
-        const result = getCurrentTimeInTimezone('UTC');
-        
-        // The function should handle the null values and return an error
-        expect(result).toBe('Invalid timezone');
-        
-        // Verify console.error was called
-        expect(consoleErrorSpy).toHaveBeenCalled();
-        
-        // Restore original implementations
-        Intl.DateTimeFormat = originalDateTimeFormat;
-      } finally {
-        // Restore console.error
-        consoleErrorSpy.mockRestore();
-      }
+      // Mock DateTimeFormat to return our formatter
+      Intl.DateTimeFormat = jest.fn().mockImplementation(() => mockNullFormatter) as any;
+      
+      const result = getCurrentTimeInTimezone('UTC');
+      
+      // The function should handle the null values and return an error
+      expect(result).toBe('Invalid timezone');
+      
+      // Verify console.error was called
+      expect(console.error).toHaveBeenCalled();
     });
 
     it('should handle empty result from formatter.format()', () => {
-      // Create a spy on console.error to verify it's not called
-      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      // Mock for the formatter that returns empty string
+      const mockEmptyFormatter = {
+        format: jest.fn().mockReturnValue('')
+      };
       
-      try {
-        // Mock DateTimeFormat to return a formatter with empty format result
-        const originalDateTimeFormat = Intl.DateTimeFormat;
-        
-        // Mock for the formatter that returns empty string
-        const mockEmptyFormatter = {
-          format: jest.fn().mockReturnValue('')
-        };
-        
-        // Mock for the formatter that gets the date parts
-        const mockTzFormatter = {
-          formatToParts: jest.fn().mockReturnValue([
-            { type: 'year', value: '2023' },
-            { type: 'month', value: '01' },
-            { type: 'day', value: '01' },
-            { type: 'hour', value: '12' },
-            { type: 'minute', value: '00' },
-            { type: 'second', value: '00' },
-            { type: 'fractionalSecond', value: '123' }
-          ])
-        };
-        
-        // Mock Date.toLocaleString to return a valid string
-        const originalToLocaleString = Date.prototype.toLocaleString;
-        Date.prototype.toLocaleString = jest.fn().mockReturnValue('1/1/2023, 12:00:00 PM GMT+0000') as any;
-        
-        // @ts-ignore - TypeScript doesn't like us mocking built-in objects
-        Intl.DateTimeFormat = jest.fn()
-          .mockImplementationOnce(() => mockEmptyFormatter)
-          .mockImplementationOnce(() => mockTzFormatter);
-        
-        const result = getCurrentTimeInTimezone('UTC');
-        
-        // The function should handle the empty string and still return a result
-        expect(result).toContain('2023-01-01T12:00:00.123');
-        
-        // Restore original implementations
-        Intl.DateTimeFormat = originalDateTimeFormat;
-        Date.prototype.toLocaleString = originalToLocaleString;
-      } finally {
-        // Restore console.error
-        consoleErrorSpy.mockRestore();
-      }
+      // Mock for the formatter that gets the date parts
+      const mockTzFormatter = {
+        formatToParts: jest.fn().mockReturnValue([
+          { type: 'year', value: '2023' },
+          { type: 'month', value: '01' },
+          { type: 'day', value: '01' },
+          { type: 'hour', value: '12' },
+          { type: 'minute', value: '00' },
+          { type: 'second', value: '00' },
+          { type: 'fractionalSecond', value: '123' }
+        ])
+      };
+      
+      // Mock Date.toLocaleString to return a valid string
+      Date.prototype.toLocaleString = jest.fn().mockReturnValue('1/1/2023, 12:00:00 PM GMT+0000') as any;
+      
+      // Mock DateTimeFormat to return our formatters
+      Intl.DateTimeFormat = jest.fn()
+        .mockImplementationOnce(() => mockEmptyFormatter)
+        .mockImplementationOnce(() => mockTzFormatter) as any;
+      
+      const result = getCurrentTimeInTimezone('UTC');
+      
+      // The function should handle the empty string and still return a result
+      expect(result).toContain('2023-01-01T12:00:00.123');
     });
 
     it('should handle empty result from toLocaleString()', () => {
-      // Create a spy on console.error to verify it's not called
-      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      // Mock for the formatter that returns valid string
+      const mockFormatter = {
+        format: jest.fn().mockReturnValue('1/1/2023, 12:00:00 PM GMT+0000')
+      };
       
-      try {
-        // Mock DateTimeFormat to return a formatter with valid format result
-        const originalDateTimeFormat = Intl.DateTimeFormat;
-        
-        // Mock for the formatter that returns valid string
-        const mockFormatter = {
-          format: jest.fn().mockReturnValue('1/1/2023, 12:00:00 PM GMT+0000')
-        };
-        
-        // Mock for the formatter that gets the date parts
-        const mockTzFormatter = {
-          formatToParts: jest.fn().mockReturnValue([
-            { type: 'year', value: '2023' },
-            { type: 'month', value: '01' },
-            { type: 'day', value: '01' },
-            { type: 'hour', value: '12' },
-            { type: 'minute', value: '00' },
-            { type: 'second', value: '00' },
-            { type: 'fractionalSecond', value: '123' }
-          ])
-        };
-        
-        // Mock Date.toLocaleString to return an empty string
-        const originalToLocaleString = Date.prototype.toLocaleString;
-        Date.prototype.toLocaleString = jest.fn().mockReturnValue('') as any;
-        
-        // @ts-ignore - TypeScript doesn't like us mocking built-in objects
-        Intl.DateTimeFormat = jest.fn()
-          .mockImplementationOnce(() => mockFormatter)
-          .mockImplementationOnce(() => mockTzFormatter);
-        
-        const result = getCurrentTimeInTimezone('UTC');
-        
-        // The function should handle the empty string and still return a result
-        expect(result).toContain('2023-01-01T12:00:00.123');
-        
-        // Restore original implementations
-        Intl.DateTimeFormat = originalDateTimeFormat;
-        Date.prototype.toLocaleString = originalToLocaleString;
-      } finally {
-        // Restore console.error
-        consoleErrorSpy.mockRestore();
-      }
+      // Mock for the formatter that gets the date parts
+      const mockTzFormatter = {
+        formatToParts: jest.fn().mockReturnValue([
+          { type: 'year', value: '2023' },
+          { type: 'month', value: '01' },
+          { type: 'day', value: '01' },
+          { type: 'hour', value: '12' },
+          { type: 'minute', value: '00' },
+          { type: 'second', value: '00' },
+          { type: 'fractionalSecond', value: '123' }
+        ])
+      };
+      
+      // Mock Date.toLocaleString to return an empty string
+      Date.prototype.toLocaleString = jest.fn().mockReturnValue('') as any;
+      
+      // Mock DateTimeFormat to return our formatters
+      Intl.DateTimeFormat = jest.fn()
+        .mockImplementationOnce(() => mockFormatter)
+        .mockImplementationOnce(() => mockTzFormatter) as any;
+      
+      const result = getCurrentTimeInTimezone('UTC');
+      
+      // The function should handle the empty string and still return a result
+      expect(result).toContain('2023-01-01T12:00:00.123');
     });
   });
 
   describe('handleInvalidTimezone', () => {
-    let originalConsoleWarn: typeof console.warn;
-
     beforeEach(() => {
-      originalConsoleWarn = console.warn;
       console.warn = jest.fn();
-    });
-
-    afterEach(() => {
-      console.warn = originalConsoleWarn;
     });
 
     it('should log a warning and return UTC', () => {
@@ -481,7 +396,6 @@ describe('timezone-utils', () => {
         if (isValidTimezone(timezone)) {
           return timezone;
         }
-        // This is the line we want to cover
         return handleInvalidTimezone(timezone);
       };
 
@@ -496,15 +410,8 @@ describe('timezone-utils', () => {
   });
 
   describe('processTimezone', () => {
-    let originalConsoleWarn: typeof console.warn;
-
     beforeEach(() => {
-      originalConsoleWarn = console.warn;
       console.warn = jest.fn();
-    });
-
-    afterEach(() => {
-      console.warn = originalConsoleWarn;
     });
 
     it('should return the timezone if it is valid', () => {
