@@ -30,3 +30,7 @@ yarn-error.log*
 # OS specific
 .DS_Store
 Thumbs.db 
+
+# Test coverage
+coverage/
+.nyc_output/ 
