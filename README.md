@@ -57,14 +57,20 @@ This will start the MCP DateTime server using stdio transport, which can be conn
 ### Running the server with HTTP/SSE transport
 
 ```bash
-# Start the server with HTTP/SSE transport
-npm run start:http
+# Start the server with HTTP/SSE transport (default port 3000)
+npm run start:sse
+
+# Start with a custom port using command line argument
+npm run start:sse -- --port=8080
+
+# Start with a custom port using environment variable
+PORT=8080 npm run start:sse
 ```
 
-This will start an HTTP server (default port 3000) that provides Server-Sent Events (SSE) for MCP communication. The server exposes the following endpoints:
+This will start an HTTP server that provides Server-Sent Events (SSE) for MCP communication. The server exposes the following endpoints:
 
 - `/sse` - SSE endpoint for establishing a connection
-- `/messages?connectionId=<id>` - Endpoint for sending messages to the server
+- `/message` - Endpoint for sending messages to the server
 - `/info` - Basic server information
 
 You can connect to this server using an MCP client that supports the SSE transport.
@@ -95,13 +101,19 @@ npx @modelcontextprotocol/inspector node dist/index.js
 For the HTTP/SSE transport, first start the server:
 
 ```bash
-npm run start:http
+npm run start:sse
 ```
 
 Then in a separate terminal, you can connect to it using an MCP client that supports SSE, or you can use tools like `curl` to test the SSE endpoint:
 
 ```bash
 curl -N http://localhost:3000/sse
+```
+
+To send messages to the server, you can use a tool like `curl` to make POST requests to the `/message` endpoint with the appropriate connection ID:
+
+```bash
+curl -X POST http://localhost:3000/message -H "Content-Type: application/json" -d '{"message": "your message here"}'
 ```
 
 ## Available Tools
