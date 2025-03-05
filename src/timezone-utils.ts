@@ -65,20 +65,27 @@ export function isValidTimezone(timezone: string): boolean {
  */
 export function getCurrentTimezone(): string {
   try {
-    // Get the timezone from the system
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    
-    // Verify it's a valid timezone
-    if (isValidTimezone(timezone)) {
-      return timezone;
-    } else {
-      console.warn(`System timezone ${timezone} is not valid, falling back to UTC`);
-      return "UTC";
-    }
+    return processTimezone(timezone);
   } catch (error) {
     console.error("Error getting current timezone:", error);
     return "UTC"; // Default to UTC if there's an error
   }
+}
+
+// Export this function to make it testable
+export function processTimezone(timezone: string): string {
+  // Verify it's a valid timezone
+  if (isValidTimezone(timezone)) {
+    return timezone;
+  } 
+  return handleInvalidTimezone(timezone);
+}
+
+// Export this function to make it testable
+export function handleInvalidTimezone(timezone: string): string {
+  console.warn(`System timezone ${timezone} is not valid, falling back to UTC`);
+  return "UTC";
 }
 
 /**
