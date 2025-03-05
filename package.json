@@ -1,6 +1,6 @@
 {
-  "name": "mcp-datetime",
-  "version": "0.1.0",
+  "name": "@odgrim/mcp-datetime",
+  "version": "0.2.0",
   "description": "A TypeScript implementation of a simple MCP server that exposes datetime information to agentic systems and chat REPLs",
   "type": "module",
   "main": "dist/index.js",
