@@ -5,18 +5,18 @@
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "mcp-datetime": "./dist/index.js"
+    "mcp-datetime": "dist/index.js"
   },
   "files": [
     "dist"
   ],
   "scripts": {
-    "build": "tsc && node --input-type=module -e \"import { chmod } from 'fs/promises'; await chmod('./dist/index.js', '755');\"",
+    "build": "tsc && shx chmod +x dist/*.js",
     "prepare": "npm run build",
+    "watch": "tsc --watch",
     "start": "node dist/index.js",
     "dev": "ts-node --esm src/index.ts",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "postinstall": "npm run build"
   },
   "keywords": [
     "mcp",
